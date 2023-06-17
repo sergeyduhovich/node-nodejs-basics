@@ -1,18 +1,13 @@
-import { parentPort } from "worker_threads";
+import { workerData, parentPort } from "worker_threads";
 
-const nthFibonacci = (n) => {
-  console.log(`worker.js --- invoked: nthFibonacci(${n})`);
-  return n < 2 ? n : nthFibonacci(n - 1) + nthFibonacci(n - 2);
+const nthFibonacci = (n) =>
+  n < 2 ? n : nthFibonacci(n - 1) + nthFibonacci(n - 2);
+
+const sendResult = () => {
+  const result = nthFibonacci(workerData);
+  // console.log(`worker.js(${workerData}) calculated ${result}`);
+  parentPort.postMessage({ workerId: workerData, result });
 };
 
-const sendResult = (n) => {
-  const result = nthFibonacci(n);
-  parentPort.postMessage(result);
-};
-
+// console.log(`worker.js(${workerData}) loaded`);
 sendResult();
-
-parentPort.on("message", (message) => {
-  console.log(`parentPort.on("message", (${message})`);
-  sendResult(message);
-});

@@ -1,21 +1,30 @@
 import { Worker } from "worker_threads";
+import * as os from "os";
 
-const performCalculationsInWorker = async (input) => {
+const workerPromise = (src, input) => {
+  const worker = new Worker(src, { workerData: input });
   return new Promise((resolve) => {
-    const worker = new Worker("./src/wt/worker.js");
-    worker.on("message", (result) => {
-      console.log(`main.js --- received: worker.on("message", (${result})`);
-      worker.terminate();
-      resolve(result);
+    worker.on("message", (message) => {
+      resolve({ status: "resolved", data: message.result });
     });
-    console.log(`main.js --- invoke: worker.postMessage(${input});`);
-    worker.postMessage(input);
+    worker.on("error", () => {
+      resolve({ status: "error", data: null });
+    });
   });
 };
 
 const performCalculations = async () => {
-  const result = await performCalculationsInWorker(1);
-  console.log(result);
+  const numCores = os.cpus().length;
+  // console.log(`number of logical core is ${numCores}`);
+  let workerPromisesArray = [];
+  for (let i = 0; i < numCores; i++) {
+    const input = 10 + i;
+    // console.log(`main.js - created a worker ${input}`);
+    const worker = workerPromise("./src/wt/worker.js", input);
+    workerPromisesArray.push(worker);
+  }
+  const arrayToLog = await Promise.all(workerPromisesArray);
+  console.log(arrayToLog);
 };
 
 await performCalculations();
